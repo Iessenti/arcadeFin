@@ -1,0 +1,32 @@
+{
+  "name": "arcade-orders",
+  "version": "1.0.1",
+  "description": "",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js",
+    "server": "nodemon app.js",
+    "client": "npm run start --prefix client",
+    "client:install": "npm install --prefix client",
+    "client:build": "npm run build --prefix client",
+    "dev": "cross-env NODE_ENV=production concurrently \"npm run server\" \"npm run client\""
+  },
+  "keywords": [
+    "Arcade"
+  ],
+  "author": "Nikita Aleshkin <iessenti@gmail.com>",
+  "license": "ISC",
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "body-parser": "^1.19.0",
+    "config": "^3.3.1",
+    "express": "^4.17.1",
+    "mongodb": "^3.5.9",
+    "npm-git-install": "^0.3.0"
+  },
+  "devDependencies": {
+    "concurrently": "^5.2.0",
+    "cross-env": "^7.0.2",
+    "nodemon": "^2.0.4"
+  }
+}
