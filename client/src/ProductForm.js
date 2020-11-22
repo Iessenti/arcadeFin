@@ -66,7 +66,7 @@ export class ProductForm extends React.Component {
 			<form onSubmit={this.handleSubmit}>
 				<div class="rows">
 					<label>ID товара</label><br />
-					<input type='text' name="title" onChange={this.myChangeHandler} value={this.state.id}/>
+					<input type='text' name="id" onChange={this.myChangeHandler} value={this.state.id}/>
 				</div>
 				<div class="rows">
 					<label>Наименование товара</label><br />
@@ -78,19 +78,19 @@ export class ProductForm extends React.Component {
 				</div>
 				<div class="rows">
 					<label>Цвет</label><br />
-					<input type='text' name="price" onChange={this.myChangeHandler} value={this.state.color}/>
+					<input type='text' name="color" onChange={this.myChangeHandler} value={this.state.color}/>
 				</div>
 				<div class="rows">
 					<label>Размер</label><br />
-					<input type='text' name="price" onChange={this.myChangeHandler} value={this.state.color}/>
+					<input type='text' name="sizes" onChange={this.myChangeHandler} value={this.state.sizes}/>
 				</div>
 				<div class="rows">
 					<label>Категория</label><br />
-					<input type='text' name="price" onChange={this.myChangeHandler} value={this.state.category}/>
+					<input type='text' name="category" onChange={this.myChangeHandler} value={this.state.category}/>
 				</div>
 				<div class="rows">
 					<label>Бренд</label><br />
-					<input type='text' name="thiPhoto" onChange={this.myChangeHandler} value={this.state.brand}/>
+					<input type='text' name="brand" onChange={this.myChangeHandler} value={this.state.brand}/>
 				</div>
 				<div class="rows">
 					<label>Пол</label><br /> 

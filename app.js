@@ -1,6 +1,7 @@
 const express = require('express')
 const config = require('config')
 const MongoClient = require("mongodb").MongoClient
+
 const bodyParser = require("body-parser")
 
 const app = express()
@@ -8,10 +9,12 @@ const jsonParser = express.json()
 const urlencodedParser = bodyParser.urlencoded({extended: false})
 const bcrypt = require('bcryptjs')
 var salt = bcrypt.genSaltSync(16);
-let orderNum = 0;
+let orderNum = 1;
+var path = require('path')
+
 
 app.post('/getProductsBySex', jsonParser, (request,response) => {
-	const dbClient = new MongoClient(config.get("mongoUri"), {useNewUrlParser:true, useUnifiedTopology: true})
+const dbClient = new MongoClient(config.get("mongoUri"), {useNewUrlParser:true, useUnifiedTopology: true})		
 	dbClient.connect( (err,client) => {
 				const db = client.db("products")
 				const collection = db.collection("Products-list")
@@ -24,18 +27,27 @@ app.post('/getProductsBySex', jsonParser, (request,response) => {
 	})
 })
 
-app.post('/addOrder', jsonParser, (request,response) => {
-	const dbClient = new MongoClient(config.get("mongoUri"), {useNewUrlParser:true, useUnifiedTopology: true})
-	dbClient.connect( (err,client) => {
-				const db = client.db("orders")
-				const collection = db.collection("Orders-list")
-				const productCollection = client.db('products').collection('Products-list')
-				orderNum += 1;
+app.post('/getAllProducts', jsonParser, (request, response) => {
+	const dbClient = new MongoClient(config.get('mongoUri'), {useNewUrlParser:true, useUnifiedTopology:true})
+	dbClient.connect ((err,client) => {
+		const db = client.db('products')
+		const collection = db.collection('Products-list')
 
-				for (i = 0; i < request.body.order.length; i++) {
-					collection.insertOne({num: orderNum, address: request.body.address.address, phone: request.body.address.phone, item: request.body.order.order[i].title, size:request.body.order.order[i].size, state: request.body.state, status: '1'}, function(err,result) {
-						productCollection.findOne({title: request.body.order.order[i].title}, function(err, result) {
-							sizeStr = result.sizes
+		collection.find().toArray((err,result) => {
+			response.send(result)
+			client.close()
+		})
+	})
+})
+
+const f = async (requestTitle, requestSize) => {
+	const dbClient = new MongoClient(config.get('mongoUri'), {useNewUrlParser:true, useUnifiedTopology: true})
+	dbClient.connect( (err,client) => {
+		const db = client.db('products')
+		const collection = db.collection('Products-list')
+		collection.findOne({title: requestTitle}, (err, res) => {
+
+					sizeStr = res.sizes
 							let posArr = []
 						    let sizesArr = []
 						    const target = ' '
@@ -48,11 +60,16 @@ app.post('/addOrder', jsonParser, (request,response) => {
 
 						    for (let i = 0; i < (posArr.length + 1); i++) {
 						        let str = sizeStr.slice(position, posArr[i])
-						        if (str[0] + str[1] == request.body.order.order[i].size) {
+						        if (str[0] + str[1] == requestSize) {
 						          let s = str.slice(2)
 						          let newInt = parseInt(s) - 1
-						          finStr = finStr + str[0] + str[1] + String(newInt) + sizeStr.slice(posArr[i])
-						        } else if (i != posArr.length){
+						          if (i == posArr.length) {
+								 finStr = finStr + str[0] + str[1] + String(newInt) 
+						       	  } else {
+								finStr = finStr + str[0] + str[1] + String(newInt) + sizeStr.slice(posArr[i])
+								break
+							  }
+							 } else if (i != posArr.length){
 						        	finStr = finStr + str + ' '
 						        } else {
 						        	finStr = finStr + str
@@ -60,26 +77,42 @@ app.post('/addOrder', jsonParser, (request,response) => {
 
 						        position = posArr[i] + 1
 						    }
-
-						    collection.findOneAndUpdate({title: request.body.order.order[i].title}, {$sizes: finStr}, function(err, result) {})
+						    collection.findOneAndUpdate({title: requestTitle}, {$set: {sizes: finStr}}, function(err, result) { client.close()})
 						})
-						
+
+//					client.close()
+	})
+}
+
+app.post('/addOrder', jsonParser, (request,response) => {
+	const dbClient = new MongoClient(config.get("mongoUri"), {useNewUrlParser:true, useUnifiedTopology: true})
+	dbClient.connect( (err,client) => {
+				const db = client.db("orders")
+				const collection = db.collection("Orders-list")
+				orderNum += 1;
+
+				for (let i = 0; i < request.body.order.length; i++) {
+					let order = {num: orderNum, address: request.body.address.address, phone: request.body.address.phone, item: request.body.order[i].title, size:request.body.order[i].size, state: request.body.state, status: '1'}
+					collection.insertOne(order, (err,result) => {
+						f(request.body.order[i].title, request.body.order[i].size)
+						client.close()
 					})
-
 				}
-
-				client.close()
+				response.send({id:orderNum})
+				
 	})
 })
 
 app.post('/checkOrderState', jsonParser, (request,response) => {
 	const dbClient = new MongoClient(config.get("mongoUri"), {useNewUrlParser:true, useUnifiedTopology: true})
 	dbClient.connect( (err,client) => {
-				const db = client.db("products")
-				const collection = db.collection("Products-list")
+				const db = client.db("orders")
+				const collection = db.collection("Orders-list")
 				
 				collection.findOne({num: request.body.id}, function(err, result) {
-					response.send({status: result.status})
+					if (result != null) {
+						response.send({status: result.status})
+					}
 					client.close()
 				})
 
@@ -92,18 +125,21 @@ app.post('/getProductsByCatOrBrand', jsonParser, (request,response) => {
 				const db = client.db("products")
 				const collection = db.collection("Products-list")
 				
-				if (request.body.type == "C") {
+				if (request.body.type === "C") {
 					collection.find({category: request.body.category}).toArray((err,result) => {
 						response.send(result)
 						client.close()
 					})
-				} else {
+				} else if (request.body.type === 'B') {
 					collection.find({brand: request.body.category}).toArray((err,result) => {
 						response.send(result)
 						client.close()
 					})
+				} else if (request.body.type === 'A') {
+					collection.find().toArray( (err,result) => {
+						response.send(result); client.close();
+					})
 				}
-
 	})
 })
 
@@ -128,17 +164,15 @@ app.post('/signup', jsonParser, (request,response) => {
 				const collection = db.collection("Users-list")
 				
 				collection.findOne({phone: request.body.phone}, (err,result) => {
-					if ( request.body.password.length < 8 ) { response.send({answer: 'less'}) }
-					else if (request.body.phone == result.phone) { response.send({answer:'exist'}) }
-					else {
+					if (result == null) {
 						account = {phone: request.body.phone, password: bcrypt.hashSync(request.body.password, salt), name: request.body.name}
 						collection.insertOne(account, (err,result) => {
 							response.send({answer: 'ok'})
 						})
-					}
+					} else if ( request.body.password.length < 8 ) { response.send({answer: 'less'}) }
+					else if (request.body.phone == result.phone) { response.send({answer:'exist'}) }
 					client.close()
- 				})
-
+				})
 	})
 })
 
@@ -149,7 +183,7 @@ app.post('/login', jsonParser, (request,response) => {
 				const collection = db.collection("Users-list")
 				
 				collection.findOne({phone: request.body.phone}, (err,result) => {
-					if (request.body.phone != result.phone) { response.send({ answer: "notexist"}) }
+					if (result == null) { response.send({ answer: "notexist"}) }
 					else if (bcrypt.hashSync(request.body.password, salt) != result.password) { response.send({ answer: "passNot"}) }
 					else { response.send({answer: request.body.name}) }
 					client.close()

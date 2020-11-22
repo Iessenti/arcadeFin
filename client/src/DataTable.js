@@ -1,5 +1,5 @@
 import React from 'react'
-import { useState } from 'react'
+import { useState,useEffect } from 'react'
 
 
 export const DataTable = () => {
@@ -13,7 +13,8 @@ export const DataTable = () => {
 		alert(result.message);
 	}
 
-	const getData = async () => {
+	useEffect( () => {
+		const getData = async () => {
 			const response = await fetch('/orders', {method:"GET"})
 			const data = await response.json()
 			const body = data.map((elem, index) => {
@@ -30,10 +31,10 @@ export const DataTable = () => {
 					)
 				}
 			})
-			setOrders(body)	
-	}
-
-	getData()
+			setOrders(body)
+		}
+		getData()
+	}, [])
 
 	return ( 
 		<div>
